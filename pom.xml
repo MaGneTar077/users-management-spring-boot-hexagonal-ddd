@@ -137,17 +137,6 @@
         <version>6.2.8</version>
       </dependency>
 
-      <!--
-        jakarta.mail 2.0.3 — PENDIENTE DE CORRECCIÓN
-        ─────────────────────────────────────────────────────────────────────────
-        CVE-2025-7962 (HIGH 7.5): Insufficient Information.
-        org.eclipse.angus:jakarta.mail:2.0.3 es la ÚLTIMA versión estable
-        disponible en Maven Central (verificado 2026-05-06). No existe versión
-        superior que corrija este CVE. Se mantiene la versión actual gestionada
-        por Spring Boot hasta que el proyecto Eclipse Angus publique un parche.
-        ─────────────────────────────────────────────────────────────────────────
-      -->
-
       <!-- AssertJ: CVE-2026-24400 (test scope) -->
       <dependency>
         <groupId>org.assertj</groupId>
