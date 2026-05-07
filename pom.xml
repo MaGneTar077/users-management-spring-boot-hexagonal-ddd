@@ -6,7 +6,7 @@
 
   <groupId>com.jcaa.usersmanagement</groupId>
   <artifactId>users-management</artifactId>
-  <version>1.4</version>
+  <version>1.5.0</version>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
@@ -18,12 +18,11 @@
     <bcrypt.version>0.10.2</bcrypt.version>
     <mockito.version>5.15.2</mockito.version>
     <jacoco.version>0.8.11</jacoco.version>
-    <spring.boot.version>3.4.5</spring.boot.version>
+    <spring.boot.version>3.5.2</spring.boot.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
@@ -61,7 +60,7 @@
         <version>2.18.6</version>
       </dependency>
 
-      <!-- Tomcat: CVE-2025-48988, CVE-2025-52520, CVE-2025-55752, CVE-2025-48989 y otros -->
+      <!-- Tomcat: CVE-2025-48988, CVE-2025-52520, CVE-2025-55752 y otros -->
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-core</artifactId>
@@ -77,10 +76,6 @@
         <artifactId>tomcat-embed-websocket</artifactId>
         <version>10.1.54</version>
       </dependency>
-
-      <!-- Spring Framework 6.2.8: CVE-2025-41234 (spring-web), CVE-2025-22233 (spring-context),
-           CVE-2025-41242 (spring-beans/webmvc). Se actualiza el conjunto completo para
-           mantener consistencia interna entre módulos. -->
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-core</artifactId>
@@ -141,6 +136,17 @@
         <artifactId>spring-messaging</artifactId>
         <version>6.2.8</version>
       </dependency>
+
+      <!--
+        jakarta.mail 2.0.3 — PENDIENTE DE CORRECCIÓN
+        ─────────────────────────────────────────────────────────────────────────
+        CVE-2025-7962 (HIGH 7.5): Insufficient Information.
+        org.eclipse.angus:jakarta.mail:2.0.3 es la ÚLTIMA versión estable
+        disponible en Maven Central (verificado 2026-05-06). No existe versión
+        superior que corrija este CVE. Se mantiene la versión actual gestionada
+        por Spring Boot hasta que el proyecto Eclipse Angus publique un parche.
+        ─────────────────────────────────────────────────────────────────────────
+      -->
 
       <!-- AssertJ: CVE-2026-24400 (test scope) -->
       <dependency>
