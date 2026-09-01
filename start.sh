@@ -1,3 +1,4 @@
+cat > start.sh << 'EOF'
 #!/bin/bash
 set -e
 
@@ -5,15 +6,12 @@ echo "========================================="
 echo "🚀 Iniciando contenedor con MySQL + App"
 echo "========================================="
 
-# Iniciar MySQL con el comando correcto
 echo "📦 Iniciando MySQL..."
 mysqld_safe --bind-address=0.0.0.0 --datadir=/var/lib/mysql &
 
-# Esperar a que MySQL esté listo
 echo "⏳ Esperando a que MySQL esté listo..."
 sleep 15
 
-# Verificar que MySQL está corriendo
 if mysqladmin ping -h localhost -u root --silent 2>/dev/null; then
     echo "✅ MySQL está funcionando correctamente"
 else
@@ -21,16 +19,25 @@ else
     exit 1
 fi
 
-# Crear la base de datos y ejecutar el schema
-echo "📦 Creando base de datos y ejecutando schema..."
+echo "📦 Creando base de datos..."
 mysql -u root <<-EOSQL
     CREATE DATABASE IF NOT EXISTS crud_usuarios;
     USE crud_usuarios;
     SOURCE /docker-entrypoint-initdb.d/schema.sql;
 EOSQL
 
-# Iniciar la aplicación Spring Boot
 echo "========================================="
 echo "☕ Iniciando aplicación Spring Boot..."
 echo "========================================="
-exec java -jar /app/app.jar
+
+# Iniciar SIN exec para que los logs se vean
+java -Xmx512m -Xms256m \
+    -Dserver.port=8080 \
+    -jar /app/app.jar
+
+# Si llegamos aquí, algo falló
+echo "❌ ERROR: La aplicación Spring Boot terminó inesperadamente"
+exit 1
+EOF
+
+chmod +x start.sh
