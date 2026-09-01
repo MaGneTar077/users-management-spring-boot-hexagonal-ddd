@@ -15,7 +15,7 @@ RUN apt-get update && \
     apt-get install -y mysql-server && \
     rm -rf /var/lib/apt/lists/*
 
-# Configurar MySQL - Crear directorios necesarios
+# Configurar MySQL
 RUN mkdir -p /var/run/mysqld && \
     mkdir -p /var/lib/mysql && \
     chown -R mysql:mysql /var/run/mysqld && \
@@ -23,20 +23,24 @@ RUN mkdir -p /var/run/mysqld && \
     chmod -R 755 /var/run/mysqld && \
     chmod -R 755 /var/lib/mysql
 
-# Crear directorio para scripts de inicialización
+# Directorio para scripts de inicialización
 RUN mkdir -p /docker-entrypoint-initdb.d/
 
-# Copiar script de inicialización (SOLO schema.sql, no init.sql si no existe)
+# Copiar schema.sql
 COPY src/main/resources/schema.sql /docker-entrypoint-initdb.d/
 
 # Copiar la aplicación
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-# Copiar script de inicio
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
 EXPOSE 8080
 
-ENTRYPOINT ["/start.sh"]
+# EJECUTAR TODO EN UN COMANDO (sin script externo)
+CMD bash -c "mysqld_safe --bind-address=0.0.0.0 --datadir=/var/lib/mysql & \
+    echo '⏳ Esperando a que MySQL esté listo...' && \
+    sleep 15 && \
+    echo '📦 Creando base de datos...' && \
+    mysql -u root -e 'CREATE DATABASE IF NOT EXISTS crud_usuarios;' && \
+    mysql -u root crud_usuarios < /docker-entrypoint-initdb.d/schema.sql && \
+    echo '☕ Iniciando aplicación Spring Boot...' && \
+    java -Xmx512m -Xms256m -Dserver.port=8080 -jar /app/app.jar"
