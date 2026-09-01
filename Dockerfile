@@ -23,9 +23,11 @@ RUN mkdir -p /var/run/mysqld && \
     chmod -R 755 /var/run/mysqld && \
     chmod -R 755 /var/lib/mysql
 
-# Copiar script de inicialización
-COPY init.sql /docker-entrypoint-initdb.d/
-COPY src/main/resources/schema.sql /docker-entrypoint-initdb.d/ 2>/dev/null || true
+# Crear directorio para scripts de inicialización
+RUN mkdir -p /docker-entrypoint-initdb.d/
+
+# Copiar script de inicialización (SOLO schema.sql, no init.sql si no existe)
+COPY src/main/resources/schema.sql /docker-entrypoint-initdb.d/
 
 # Copiar la aplicación
 WORKDIR /app
