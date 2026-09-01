@@ -16,7 +16,7 @@ import com.jcaa.usersmanagement.application.service.UpdateUserService;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.JavaMailEmailSenderAdapter;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.SmtpConfig;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConfig;
-import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.UserRepositoryMySQL;
+import com.jcaa.usersmanagement.infrastructure.adapter.persistence.repository.UserRepositoryJDBC;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.desktop.controller.UserController;
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.validation.Validator;
@@ -43,7 +43,7 @@ public final class DependencyContainer {
     final AppProperties properties = new AppProperties();
 
     final DataSource dataSource = buildDataSource(properties);
-    final UserRepositoryMySQL userRepository = new UserRepositoryMySQL(dataSource);
+    final UserRepositoryJDBC userRepository = new UserRepositoryJDBC(dataSource);
 
     final JavaMailEmailSenderAdapter emailSender =
         new JavaMailEmailSenderAdapter(buildSmtpConfig(properties));
