@@ -10,7 +10,7 @@ RUN mvn clean package -DskipTests
 # Etapa final con MySQL + App
 FROM eclipse-temurin:17-jre
 
-# Instalar MySQL y dependencias necesarias
+# Instalar MySQL
 RUN apt-get update && \
     apt-get install -y mysql-server && \
     rm -rf /var/lib/apt/lists/*
@@ -23,24 +23,28 @@ RUN mkdir -p /var/run/mysqld && \
     chmod -R 755 /var/run/mysqld && \
     chmod -R 755 /var/lib/mysql
 
-# Directorio para scripts de inicialización
+# Copiar schema
 RUN mkdir -p /docker-entrypoint-initdb.d/
-
-# Copiar schema.sql
 COPY src/main/resources/schema.sql /docker-entrypoint-initdb.d/
 
-# Copiar la aplicación
+# Copiar aplicación
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-# EJECUTAR TODO EN UN COMANDO (sin script externo)
+# Iniciar MySQL y Spring Boot con logs COMPLETOS
 CMD bash -c "mysqld_safe --bind-address=0.0.0.0 --datadir=/var/lib/mysql & \
     echo '⏳ Esperando a que MySQL esté listo...' && \
     sleep 15 && \
-    echo '📦 Creando base de datos...' && \
+    echo '✅ MySQL iniciado' && \
     mysql -u root -e 'CREATE DATABASE IF NOT EXISTS crud_usuarios;' && \
     mysql -u root crud_usuarios < /docker-entrypoint-initdb.d/schema.sql && \
-    echo '☕ Iniciando aplicación Spring Boot...' && \
-    java -Xmx512m -Xms256m -Dserver.port=8080 -jar /app/app.jar"
+    echo '=========================================' && \
+    echo '☕ Iniciando Spring Boot con logs COMPLETOS' && \
+    echo '=========================================' && \
+    java -Xmx512m -Xms256m -Dserver.port=8080 \
+         -Dlogging.level.root=DEBUG \
+         -Dlogging.level.org.springframework=DEBUG \
+         -Dlogging.level.com.zaxxer.hikari=TRACE \
+         -jar /app/app.jar"
