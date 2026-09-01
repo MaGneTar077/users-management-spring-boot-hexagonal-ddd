@@ -1,22 +1,23 @@
 services:
 
-  mysql:
-    image: mysql:8.4
-    container_name: users-management-mysql
+  postgres:
+    image: postgres:16
+    container_name: users-management-postgres
 
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: crud_usuarios
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: crud_usuarios
 
     ports:
-      - "3306:3306"
+      - "5432:5432"
 
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
       - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -proot123"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d crud_usuarios"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -32,11 +33,11 @@ services:
       - "8080:8080"
 
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
+      DB_HOST: postgres
+      DB_PORT: 5432
       DB_NAME: crud_usuarios
-      DB_USERNAME: root
-      DB_PASSWORD: root123
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres123
 
       SMTP_HOST: smtp.gmail.com
       SMTP_PORT: 587
@@ -46,8 +47,8 @@ services:
       SMTP_FROM_NAME: Gestion de Usuarios
 
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
 
 volumes:
-  mysql_data:
+  postgres_data:

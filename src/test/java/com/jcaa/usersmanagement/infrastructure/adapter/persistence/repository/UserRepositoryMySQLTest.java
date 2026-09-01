@@ -53,14 +53,14 @@ class UserRepositoryMySQLTest {
   @Mock private PreparedStatement statement;
   @Mock private ResultSet resultSet;
 
-  private UserRepositoryMySQL repository;
+  private UserRepositoryJDBC repository;
   private UserModel userModel;
   private UserId userId;
   private UserEmail userEmail;
 
   @BeforeEach
   void setUp() {
-    repository = new UserRepositoryMySQL(dataSource);
+    repository = new UserRepositoryJDBC(dataSource);
     userId = new UserId(ID);
     userEmail = new UserEmail(EMAIL);
     userModel =
