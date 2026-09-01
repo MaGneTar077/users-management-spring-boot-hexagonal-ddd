@@ -10,27 +10,31 @@ RUN mvn clean package -DskipTests
 # Etapa final con MySQL + App
 FROM eclipse-temurin:17-jre
 
-# Instalar MySQL
+# Instalar MySQL y dependencias necesarias
 RUN apt-get update && \
     apt-get install -y mysql-server && \
     rm -rf /var/lib/apt/lists/*
 
-# Configurar MySQL
+# Configurar MySQL - Crear directorios necesarios
 RUN mkdir -p /var/run/mysqld && \
+    mkdir -p /var/lib/mysql && \
     chown -R mysql:mysql /var/run/mysqld && \
-    chown -R mysql:mysql /var/lib/mysql
+    chown -R mysql:mysql /var/lib/mysql && \
+    chmod -R 755 /var/run/mysqld && \
+    chmod -R 755 /var/lib/mysql
 
 # Copiar script de inicialización
-COPY src/main/resources/schema.sql /docker-entrypoint-initdb.d/
+COPY init.sql /docker-entrypoint-initdb.d/
+COPY src/main/resources/schema.sql /docker-entrypoint-initdb.d/ 2>/dev/null || true
 
 # Copiar la aplicación
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
+# Copiar script de inicio
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
 EXPOSE 8080
 
-# Iniciar MySQL y luego la app TODO EN UN COMANDO
-CMD service mysql start && \
-    sleep 10 && \
-    mysql -u root -proot123 < /docker-entrypoint-initdb.d/schema.sql && \
-    java -jar /app/app.jar
+ENTRYPOINT ["/start.sh"]
