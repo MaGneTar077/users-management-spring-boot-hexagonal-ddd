@@ -40,5 +40,4 @@ build/
 .idea/
 *.log
 
-/spec/
 .env

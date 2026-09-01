@@ -1,8 +1,6 @@
-.git
-.github
-.idea
-.vscode
-target
+target/
+.git/
+.idea/
+.vscode/
 *.iml
-*.log
-spec
+.gitignore

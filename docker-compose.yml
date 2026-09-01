@@ -1,0 +1,53 @@
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: users-management-mysql
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: crud_usuarios
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: users-management-app
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: crud_usuarios
+      DB_USERNAME: root
+      DB_PASSWORD: root123
+
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_ADDRESS: ${SMTP_USERNAME}
+      SMTP_FROM_NAME: Gestion de Usuarios
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
