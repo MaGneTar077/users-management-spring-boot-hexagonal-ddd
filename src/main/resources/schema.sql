@@ -1,12 +1,3 @@
--- =============================================
--- Script de creación de la base de datos
--- Gestión de Usuarios - Arquitectura Hexagonal
--- (PostgreSQL)
--- =============================================
-
--- En Render la base de datos ya viene creada por el servicio gestionado,
--- por lo que no se necesita CREATE DATABASE / USE aquí.
-
 CREATE TABLE IF NOT EXISTS users (
                                      id          VARCHAR(36)  NOT NULL PRIMARY KEY,
     name        VARCHAR(100) NOT NULL,
@@ -20,8 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
--- PostgreSQL no soporta "ON UPDATE CURRENT_TIMESTAMP" en la definición de columna.
--- Se emula con una función + trigger que actualiza updated_at en cada UPDATE.
+
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN

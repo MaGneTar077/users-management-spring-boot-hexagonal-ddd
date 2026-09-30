@@ -40,4 +40,8 @@ build/
 .idea/
 *.log
 
+<<<<<<< HEAD
 .env
+=======
+/spec/
+>>>>>>> 697af7df862599ac90f548643db9797200a4b8ca

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-CLI desktop app for user CRUDL + access control, built with **Java 17**, **Spring Boot 3.3.5** (used only for infrastructure/IoC), **Hexagonal Architecture** and **DDD**. There is **no REST layer yet** — `entrypoint/rest/` folders exist but are empty; the only active entry point is the CLI.
+User management application built with **Java 17**, **Spring Boot 3.3.5**, **Hexagonal Architecture** and **DDD**. The active runtime is the REST API. The desktop CLI remains as an inactive adapter and is not launched by `Main`.
 
 ## Architecture
 
@@ -11,28 +11,32 @@ domain/          ← Pure Java. No framework annotations. Value Objects as recor
 application/
   port/in/       ← Use case interfaces (e.g. CreateUserUseCase)
   port/out/      ← Output port interfaces (e.g. SaveUserPort)
-  service/       ← Service implementations — @Service, inject ports via constructor
+  service/       ← Service implementations — @Service, injected through constructors
   service/dto/   ← command/ and query/ records with Bean Validation constraints
 infrastructure/
   adapter/persistence/   ← UserRepositoryMySQL: implements ALL out-ports via raw JDBC (no JPA)
   adapter/email/         ← JavaMailEmailSenderAdapter (javax.mail, NOT jakarta.mail — intentional)
-  entrypoint/desktop/    ← UserManagementCli → UserController (no Spring MVC)
-  config/                ← DependencyContainer (manual wiring, not Spring @Bean)
+  entrypoint/rest/       ← Active Spring MVC REST API
+  entrypoint/desktop/    ← Inactive CLI adapter; it has no independent composition root
+  config/                ← Spring @Configuration and @Bean infrastructure wiring
 ```
 
 **Dependency rule:** domain ← application ← infrastructure. Never import infrastructure types in domain or application layers.
 
-**IoC quirk:** `DependencyContainer` manually wires all dependencies (plain `new`). Spring Boot is present as dependency but Spring's DI (`@Autowired`, `@Bean`, application context) is **not used**. `Main.java` instantiates `DependencyContainer` directly.
+**Composition root:** Spring is the only dependency injection and application composition mechanism. `Main.java` starts the Spring application context. Infrastructure is provided through Spring configuration and component scanning. Do not introduce manual containers or parallel wiring paths.
 
 ## Key Files
 
 | File | Purpose |
 |---|---|
-| `infrastructure/config/DependencyContainer.java` | Manual DI root — wires everything |
+| `Main.java` | Starts the single Spring composition root |
+| `infrastructure/config/DataSourceSpringConfig.java` | Builds the HikariCP `DataSource` bean |
+| `infrastructure/config/SmtpSpringConfig.java` | Builds the SMTP configuration bean |
 | `infrastructure/adapter/persistence/repository/UserRepositoryMySQL.java` | Single class implements 6 out-ports via raw JDBC |
 | `domain/model/UserModel.java` | Core aggregate — immutable (`@Value`), factory method `create()`, state transitions `activate()`/`deactivate()` |
 | `domain/valueobject/UserPassword.java` | `fromPlainText()` hashes with BCrypt; `fromHash()` for DB reads |
-| `infrastructure/entrypoint/desktop/controller/UserController.java` | Desktop controller (plain class, no Spring MVC) |
+| `infrastructure/entrypoint/rest/controller/UserRestController.java` | Active REST controller |
+| `infrastructure/entrypoint/desktop/controller/UserController.java` | Inactive desktop adapter (plain class) |
 | `src/main/resources/application.properties` | DB and SMTP config (no Spring datasource auto-config) |
 | `spec/reglas-de-codificacion-java.md` | **Authoritative coding rules** — read before making any changes |
 
