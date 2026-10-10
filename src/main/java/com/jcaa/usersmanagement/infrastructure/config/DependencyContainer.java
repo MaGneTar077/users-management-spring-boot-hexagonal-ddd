@@ -29,6 +29,7 @@ public final class DependencyContainer {
   private static final String DB_NAME = "db.name";
   private static final String DB_USER = "db.username";
   private static final String DB_PASSWORD = "db.password";
+  private static final String DB_SSL_MODE = "db.ssl-mode";
 
   private static final String SMTP_HOST = "smtp.host";
   private static final String SMTP_PORT = "smtp.port";
@@ -83,7 +84,8 @@ public final class DependencyContainer {
             properties.getInt(DB_PORT),
             properties.get(DB_NAME),
             properties.get(DB_USER),
-            properties.get(DB_PASSWORD));
+            properties.get(DB_PASSWORD),
+            properties.get(DB_SSL_MODE));
     final HikariDataSource ds = new HikariDataSource();
     ds.setJdbcUrl(config.buildJdbcUrl());
     ds.setUsername(config.username());

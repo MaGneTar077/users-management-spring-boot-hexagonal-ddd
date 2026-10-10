@@ -40,4 +40,9 @@ build/
 .idea/
 *.log
 
+### Variables de entorno (nunca versionar secretos) ###
 .env
+.env.*
+
+### Material de trabajo local ###
+/spec/
