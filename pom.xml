@@ -20,7 +20,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Versiones de dependencias no gestionadas por el BOM de Spring Boot -->
     <lombok.version>1.18.36</lombok.version>
-    <mysql.connector.version>9.3.0</mysql.connector.version>
     <javamail.version>1.6.2</javamail.version>
     <bcrypt.version>0.10.2</bcrypt.version>
     <jjwt.version>0.13.0</jjwt.version>
@@ -71,11 +70,12 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- MySQL JDBC Connector -->
+    <!-- Driver JDBC de PostgreSQL (versión gestionada por el parent de Spring Boot).
+         Se necesita en runtime para que HikariCP encuentre el driver de PostgreSQL/Supabase. -->
     <dependency>
-      <groupId>com.mysql</groupId>
-      <artifactId>mysql-connector-j</artifactId>
-      <version>${mysql.connector.version}</version>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <!-- JavaMail API (javax.mail legacy — NO migrado a jakarta.mail, intencional) -->
