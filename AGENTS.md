@@ -247,27 +247,32 @@ spring.autoconfigure.exclude[2]=...security.servlet.UserDetailsServiceAutoConfig
 
 ## Próximas integraciones
 
-### Mensajería con Kafka (planificada — AÚN NO implementada)
+### Mensajería con Kafka (implementada)
 
-El proyecto se conectará a **Apache Kafka** para publicar y consumir **eventos de dominio**.
-En el código actual **no existe** ninguna dependencia ni clase de Kafka; los eventos de
-dominio (`UserCreatedDomainEvent`, `UserUpdatedDomainEvent`, `UserDeletedDomainEvent`) ya
-existen pero todavía no se publican.
+El proyecto publica **eventos de dominio** en **Apache Kafka (Aiven)** mediante un adaptador de
+salida; el microservicio de notificaciones los consume.
 
-Lineamientos acordados para cuando se implemente (enfoque *local-first*, sin costo de nube):
-
-- **Broker local:** Kafka o **Redpanda** vía Docker Compose para desarrollo.
-- **Adaptador de salida:** crear un nuevo out-port (p. ej. `UserEventPublisherPort`) e
-  implementarlo en `infrastructure/adapter/messaging/` (`KafkaEventPublisherAdapter`).
-  El dominio y la aplicación **no** deben depender de Kafka (respetar la regla de dependencias).
-- **Eventos:** publicar los `*DomainEvent` al crear/actualizar/eliminar usuarios.
-- **Consumidor idempotente:** manejar entregas duplicadas (event id / clave de idempotencia).
-- **Consistencia distribuida:** aplicar **Transactional Outbox** para no perder el evento si
-  falla la publicación tras el guardado.
-- **Configuración:** `KAFKA_BOOTSTRAP_SERVERS`, tópico(s) y *group id* por variables de entorno.
-- **TODO (iteración futura):** `KafkaSslConfig` — validación adicional de formato PEM en arranque;
-  por ahora el fail-fast lo cubren los `@NotBlank` de `KafkaProperties` y el placeholder con
-  default vacío (`${KAFKA_SSL_CA_PEM:}`).
+- **Puerto de salida:** `application/port/out/UserEventPublisherPort` (Java puro).
+- **Adaptador:** `infrastructure/adapter/messaging/KafkaUserEventPublisherAdapter`. El dominio y
+  la aplicación **no** dependen de Kafka (regla de dependencias respetada).
+- **Eventos:** se publican los `*DomainEvent` al crear/actualizar/eliminar usuarios, después de
+  persistir y sin revertir la operación si falla el broker.
+- **Payload sanitizado:** el adapter expone solo `id, name, role, status` (excluye `email` y
+  `password`). El envelope es `eventId, eventType, occurredAt, aggregateId, payload`; la clave del
+  mensaje es el `userId`.
+- **Conexión:** `SASL_SSL` con mecanismo **PLAIN** (`PlainLoginModule`).
+- **Certificado CA:** se lee desde un **archivo** (no desde una variable de entorno con el PEM),
+  porque Render no preserva los saltos de línea en los secrets de texto y Kafka falla con
+  `No matching CERTIFICATE entries in PEM file`.
+  - `spring.kafka.ssl.trust-store-location=${KAFKA_SSL_CA_LOCATION:}`
+  - **Local:** `$env:KAFKA_SSL_CA_LOCATION = "./ca.pem"`
+  - **Render:** crear un *Secret File* `ca.pem` y definir
+    `KAFKA_SSL_CA_LOCATION=/etc/secrets/ca.pem`
+  - **Ya NO se usa `KAFKA_SSL_CA_PEM`.**
+- **Consumidor idempotente:** manejar entregas duplicadas por `eventId`.
+- **Pendientes (iteración futura):** Transactional Outbox para no perder el evento si falla la
+  publicación tras el guardado; `KafkaSslConfig` con validación adicional del formato PEM en
+  arranque.
 
 ### Otros pendientes sugeridos
 

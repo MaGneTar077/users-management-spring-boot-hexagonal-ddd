@@ -85,7 +85,7 @@ class KafkaUserEventPublisherAdapterTest {
             "PLAIN",
             "user",
             "secret",
-            "-----BEGIN CERTIFICATE-----",
+            "",
             "users-management-group",
             new KafkaProperties.Topics(TOPIC_CREATED, TOPIC_UPDATED, TOPIC_DELETED));
 
