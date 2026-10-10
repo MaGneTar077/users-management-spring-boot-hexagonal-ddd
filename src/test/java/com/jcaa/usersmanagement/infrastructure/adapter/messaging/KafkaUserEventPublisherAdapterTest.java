@@ -34,8 +34,8 @@ import org.springframework.kafka.core.KafkaTemplate;
  * Tests para KafkaUserEventPublisherAdapter.
  *
  * <p>Cubre: publicacion de los tres eventos en su topico correspondiente con el envelope esperado,
- * sanitizacion del payload (no expone email ni password) y el caso en que falla la serializacion
- * (no se envia nada a Kafka).
+ * publicacion del email (excepcion consciente para el microservicio de notificaciones), exclusion
+ * permanente del password y el caso en que falla la serializacion (no se envia nada a Kafka).
  */
 @DisplayName("KafkaUserEventPublisherAdapter")
 @ExtendWith(MockitoExtension.class)
@@ -102,7 +102,7 @@ class KafkaUserEventPublisherAdapterTest {
   // ── publishUserCreated()
 
   @Test
-  @DisplayName("publishUserCreated() publica en el topico de creacion con payload sanitizado")
+  @DisplayName("publishUserCreated() publica en el topico de creacion con email y sin password")
   void shouldPublishUserCreated() throws JsonProcessingException {
     // Arrange
     when(kafkaTemplate.send(anyString(), anyString(), anyString()))
@@ -126,7 +126,7 @@ class KafkaUserEventPublisherAdapterTest {
         () -> assertEquals(NAME, envelope.get(KEY_PAYLOAD).get(FIELD_NAME).asText()),
         () -> assertEquals(ROLE_ADMIN, envelope.get(KEY_PAYLOAD).get(FIELD_ROLE).asText()),
         () -> assertEquals(STATUS_ACTIVE, envelope.get(KEY_PAYLOAD).get(FIELD_STATUS).asText()),
-        () -> assertFalse(envelope.get(KEY_PAYLOAD).has(FIELD_EMAIL), "no debe exponer email"),
+        () -> assertEquals(EMAIL, envelope.get(KEY_PAYLOAD).get(FIELD_EMAIL).asText()),
         () ->
             assertFalse(envelope.get(KEY_PAYLOAD).has(FIELD_PASSWORD), "no debe exponer password"));
   }
@@ -134,7 +134,7 @@ class KafkaUserEventPublisherAdapterTest {
   // ── publishUserUpdated()
 
   @Test
-  @DisplayName("publishUserUpdated() publica en el topico de actualizacion con payload sanitizado")
+  @DisplayName("publishUserUpdated() publica en el topico de actualizacion con email y sin password")
   void shouldPublishUserUpdated() throws JsonProcessingException {
     // Arrange
     when(kafkaTemplate.send(anyString(), anyString(), anyString()))
@@ -150,7 +150,7 @@ class KafkaUserEventPublisherAdapterTest {
         "publishUserUpdated()",
         () -> assertEquals(EVENT_TYPE_USER_UPDATED, envelope.get(KEY_EVENT_TYPE).asText()),
         () -> assertEquals(ID, envelope.get(KEY_PAYLOAD).get(FIELD_ID).asText()),
-        () -> assertFalse(envelope.get(KEY_PAYLOAD).has(FIELD_EMAIL), "no debe exponer email"),
+        () -> assertEquals(EMAIL, envelope.get(KEY_PAYLOAD).get(FIELD_EMAIL).asText()),
         () ->
             assertFalse(envelope.get(KEY_PAYLOAD).has(FIELD_PASSWORD), "no debe exponer password"));
   }
@@ -174,7 +174,10 @@ class KafkaUserEventPublisherAdapterTest {
         "publishUserDeleted()",
         () -> assertEquals(EVENT_TYPE_USER_DELETED, envelope.get(KEY_EVENT_TYPE).asText()),
         () -> assertEquals(ID, envelope.get(KEY_PAYLOAD).get(FIELD_ID).asText()),
-        () -> assertEquals(1, envelope.get(KEY_PAYLOAD).size(), "el payload solo debe exponer id"));
+        () -> assertEquals(1, envelope.get(KEY_PAYLOAD).size(), "el payload solo debe exponer id"),
+        () -> assertFalse(envelope.get(KEY_PAYLOAD).has(FIELD_EMAIL), "deleted no lleva email"),
+        () ->
+            assertFalse(envelope.get(KEY_PAYLOAD).has(FIELD_PASSWORD), "no debe exponer password"));
   }
 
   // ── fallo de serializacion

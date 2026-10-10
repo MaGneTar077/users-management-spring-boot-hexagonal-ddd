@@ -257,9 +257,12 @@ salida; el microservicio de notificaciones los consume.
   la aplicación **no** dependen de Kafka (regla de dependencias respetada).
 - **Eventos:** se publican los `*DomainEvent` al crear/actualizar/eliminar usuarios, después de
   persistir y sin revertir la operación si falla el broker.
-- **Payload sanitizado:** el adapter expone solo `id, name, role, status` (excluye `email` y
-  `password`). El envelope es `eventId, eventType, occurredAt, aggregateId, payload`; la clave del
-  mensaje es el `userId`.
+- **Payload del envelope:** incluye `id, name, email, role, status`; el `password` **nunca** se
+  incluye. El envelope es `eventId, eventType, occurredAt, aggregateId, payload`; la clave del
+  mensaje es el `userId`. El evento de eliminación solo lleva `id`.
+  - **Nota:** el `email` se publica en el evento porque el microservicio de notificaciones lo
+    necesita para enviar correos. Es una **excepción consciente** a la regla de sanitización; el
+    `password` permanece excluido por seguridad.
 - **Conexión:** `SASL_SSL` con mecanismo **PLAIN** (`PlainLoginModule`).
 - **Certificado CA:** se lee desde un **archivo** (no desde una variable de entorno con el PEM),
   porque Render no preserva los saltos de línea en los secrets de texto y Kafka falla con
