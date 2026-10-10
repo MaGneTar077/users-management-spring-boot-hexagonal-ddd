@@ -34,9 +34,12 @@ La clave del mensaje es el `userId`. El contrato del envelope es:
 }
 ```
 
-El evento de eliminación (`USER_DELETED`) solo incluye `id` en el `payload`. El `email` se publica
-porque el microservicio de notificaciones lo necesita para enviar los correos (**excepción
-consciente** a la regla de sanitización); el `password` **nunca** se publica.
+El evento de eliminación (`USER_DELETED`) solo incluye `id` en el `payload`: el
+`UserDeletedDomainEvent` únicamente lleva el `userId`, por lo que el email no está disponible a
+nivel de dominio (el microservicio de notificaciones deberá resolverlo por otra vía si necesita
+enviar el correo de eliminación). El `email` se publica en creación y actualización porque el
+microservicio de notificaciones lo necesita para enviar los correos (**excepción consciente** a la
+regla de sanitización); el `password` **nunca** se publica.
 
 ## Despliegue en Render
 

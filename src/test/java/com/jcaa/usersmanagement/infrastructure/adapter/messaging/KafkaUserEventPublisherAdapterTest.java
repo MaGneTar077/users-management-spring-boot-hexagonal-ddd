@@ -170,6 +170,8 @@ class KafkaUserEventPublisherAdapterTest {
     // Assert
     final JsonNode envelope = capturePublishedJson(TOPIC_DELETED);
 
+    // UserDeletedDomainEvent solo expone el userId: el email no esta disponible a nivel de
+    // evento, por eso el payload de eliminacion solo lleva id (ver AGENTS.md/README).
     assertAll(
         "publishUserDeleted()",
         () -> assertEquals(EVENT_TYPE_USER_DELETED, envelope.get(KEY_EVENT_TYPE).asText()),
