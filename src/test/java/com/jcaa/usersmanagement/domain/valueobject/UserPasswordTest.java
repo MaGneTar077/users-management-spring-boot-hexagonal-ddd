@@ -11,6 +11,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class UserPasswordTest {
 
+  private static final String INITIAL_ADMIN_HASH =
+      "$2a$12$sfwkajsls.fktQb0Ngw5cOiSiV3z4LIwbucSAy4sw2wyNlxbUBt4q";
+
   @ParameterizedTest
   @ValueSource(strings = {"password123", "   password123   "})
   @DisplayName("Valida que el password se normalice con trim y se aplique hash")
@@ -54,6 +57,14 @@ class UserPasswordTest {
     final UserPassword userPassword = UserPassword.fromPlainText(plainPassword);
     // Assert
     assertTrue(userPassword.verifyPlain(plainPassword));
+  }
+
+  @Test
+  @DisplayName("Valida la contraseña documentada para el administrador inicial")
+  void shouldVerifyInitialAdminPassword() {
+    final UserPassword initialAdminPassword = UserPassword.fromHash(INITIAL_ADMIN_HASH);
+
+    assertTrue(initialAdminPassword.verifyPlain("Admin1234!"));
   }
 
   @Test

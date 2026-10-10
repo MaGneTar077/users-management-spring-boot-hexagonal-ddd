@@ -1,8 +1,11 @@
 package com.jcaa.usersmanagement.infrastructure.entrypoint.rest.controller;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -11,6 +14,9 @@ import com.jcaa.usersmanagement.application.port.in.DeleteUserUseCase;
 import com.jcaa.usersmanagement.application.port.in.GetAllUsersUseCase;
 import com.jcaa.usersmanagement.application.port.in.GetUserByIdUseCase;
 import com.jcaa.usersmanagement.application.port.in.UpdateUserUseCase;
+import com.jcaa.usersmanagement.application.service.dto.command.CreateUserCommand;
+import com.jcaa.usersmanagement.application.service.dto.command.DeleteUserCommand;
+import com.jcaa.usersmanagement.application.service.dto.command.UpdateUserCommand;
 import com.jcaa.usersmanagement.application.service.dto.query.GetUserByIdQuery;
 import com.jcaa.usersmanagement.domain.enums.UserRole;
 import com.jcaa.usersmanagement.domain.enums.UserStatus;
@@ -20,10 +26,12 @@ import com.jcaa.usersmanagement.domain.valueobject.UserId;
 import com.jcaa.usersmanagement.domain.valueobject.UserName;
 import com.jcaa.usersmanagement.domain.valueobject.UserPassword;
 import com.jcaa.usersmanagement.infrastructure.security.JwtAuthenticationFilter;
+import com.jcaa.usersmanagement.infrastructure.security.JwtPrincipal;
 import com.jcaa.usersmanagement.infrastructure.security.JwtTokenService;
 import com.jcaa.usersmanagement.infrastructure.security.RestAccessDeniedHandler;
 import com.jcaa.usersmanagement.infrastructure.security.RestAuthenticationEntryPoint;
 import com.jcaa.usersmanagement.infrastructure.security.SecurityConfig;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +64,108 @@ class UserRestControllerTest {
   @MockBean private GetUserByIdUseCase getUserByIdUseCase;
   @MockBean private GetAllUsersUseCase getAllUsersUseCase;
   @MockBean private JwtTokenService jwtTokenService;
+
+  @Test
+  @DisplayName("GET /api/users debe retornar todos los usuarios")
+  void shouldGetAllUsersThroughSpringMvc() throws Exception {
+    final UserModel user =
+        new UserModel(
+            new UserId(ID),
+            new UserName("Ada Lovelace"),
+            new UserEmail("ada@example.com"),
+            UserPassword.fromHash("$2a$12$abcdefghijklmnopqrstuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"),
+            UserRole.ADMIN,
+            UserStatus.ACTIVE);
+    when(getAllUsersUseCase.execute()).thenReturn(List.of(user));
+    when(jwtTokenService.parse("valid-token")).thenReturn(new JwtPrincipal(ID, UserRole.REVIEWER));
+
+    mockMvc
+        .perform(get("/api/users").header("Authorization", "Bearer valid-token"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(ID))
+        .andExpect(jsonPath("$[0].name").value("Ada Lovelace"))
+        .andExpect(jsonPath("$[0].email").value("ada@example.com"))
+        .andExpect(jsonPath("$[0].role").value("ADMIN"))
+        .andExpect(jsonPath("$[0].status").value("ACTIVE"));
+  }
+
+  @Test
+  @DisplayName("POST /api/users debe crear un usuario válido")
+  void shouldCreateUserThroughSpringMvc() throws Exception {
+    final String request =
+        """
+        {
+          "id": "%s",
+          "name": "Ada Lovelace",
+          "email": "ada@example.com",
+          "password": "Secure123!",
+          "role": "ADMIN"
+        }
+        """.formatted(ID);
+    final UserModel user =
+        new UserModel(
+            new UserId(ID),
+            new UserName("Ada Lovelace"),
+            new UserEmail("ada@example.com"),
+            UserPassword.fromHash("$2a$12$abcdefghijklmnopqrstuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"),
+            UserRole.ADMIN,
+            UserStatus.ACTIVE);
+    when(createUserUseCase.execute(
+            new CreateUserCommand(ID, "Ada Lovelace", "ada@example.com", "Secure123!", "ADMIN")))
+        .thenReturn(user);
+
+    mockMvc
+        .perform(post("/api/users").contentType(MediaType.APPLICATION_JSON).content(request))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").value(ID));
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  @DisplayName("PUT /api/users/{id} debe actualizar un usuario")
+  void shouldUpdateUserThroughSpringMvc() throws Exception {
+    final String request =
+        """
+        {
+          "name": "Ada Byron",
+          "email": "ada.byron@example.com",
+          "password": "NewSecure123!",
+          "role": "REVIEWER",
+          "status": "ACTIVE"
+        }
+        """;
+    final UserModel user =
+        new UserModel(
+            new UserId(ID),
+            new UserName("Ada Byron"),
+            new UserEmail("ada.byron@example.com"),
+            UserPassword.fromHash("$2a$12$abcdefghijklmnopqrstuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"),
+            UserRole.REVIEWER,
+            UserStatus.ACTIVE);
+    when(updateUserUseCase.execute(
+            new UpdateUserCommand(
+                ID,
+                "Ada Byron",
+                "ada.byron@example.com",
+                "NewSecure123!",
+                "REVIEWER",
+                "ACTIVE")))
+        .thenReturn(user);
+
+    mockMvc
+        .perform(put("/api/users/{id}", ID).contentType(MediaType.APPLICATION_JSON).content(request))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Ada Byron"));
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  @DisplayName("DELETE /api/users/{id} debe eliminar un usuario")
+  void shouldDeleteUserThroughSpringMvc() throws Exception {
+    mockMvc.perform(delete("/api/users/{id}", ID)).andExpect(status().isNoContent());
+
+    verify(deleteUserUseCase).execute(new DeleteUserCommand(ID));
+  }
 
   @Test
   @WithMockUser(roles = "REVIEWER")

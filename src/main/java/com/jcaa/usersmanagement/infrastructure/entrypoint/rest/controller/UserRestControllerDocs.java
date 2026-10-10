@@ -1,5 +1,6 @@
 package com.jcaa.usersmanagement.infrastructure.entrypoint.rest.controller;
 
+import com.jcaa.usersmanagement.infrastructure.config.OpenApiConfig;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.rest.dto.request.CreateUserRestRequest;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.rest.dto.request.UpdateUserRestRequest;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.rest.dto.response.ApiErrorResponse;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -72,6 +74,7 @@ public interface UserRestControllerDocs {
   // GET /api/users
   // ─────────────────────────────────────────────────────────────────────────────
 
+  @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
   @Operation(
       summary = "Listar todos los usuarios",
       description = "Retorna la lista completa de usuarios ordenada alfabéticamente por nombre.")
@@ -91,12 +94,14 @@ public interface UserRestControllerDocs {
                 mediaType = "application/json",
                 schema = @Schema(implementation = ApiErrorResponse.class)))
   })
+  @SuppressWarnings("unused") // Invocado por Spring MVC y leído por springdoc mediante reflexión.
   List<UserRestResponse> getAll();
 
   // ─────────────────────────────────────────────────────────────────────────────
   // GET /api/users/{id}
   // ─────────────────────────────────────────────────────────────────────────────
 
+  @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
   @Operation(
       summary = "Obtener usuario por ID",
       description = "Retorna los datos de un usuario específico identificado por su ID único.")
@@ -132,6 +137,7 @@ public interface UserRestControllerDocs {
   // PUT /api/users/{id}
   // ─────────────────────────────────────────────────────────────────────────────
 
+  @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
   @Operation(
       summary = "Actualizar usuario",
       description =
@@ -185,6 +191,7 @@ public interface UserRestControllerDocs {
   // DELETE /api/users/{id}
   // ─────────────────────────────────────────────────────────────────────────────
 
+  @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
   @Operation(
       summary = "Eliminar usuario",
       description = "Elimina permanentemente un usuario del sistema por su ID.")
