@@ -6,8 +6,10 @@ import static org.mockito.Mockito.*;
 
 import com.jcaa.usersmanagement.application.port.out.GetUserByEmailPort;
 import com.jcaa.usersmanagement.application.port.out.SaveUserPort;
+import com.jcaa.usersmanagement.application.port.out.UserEventPublisherPort;
 import com.jcaa.usersmanagement.application.service.dto.command.CreateUserCommand;
 import com.jcaa.usersmanagement.domain.enums.UserRole;
+import com.jcaa.usersmanagement.domain.event.UserCreatedDomainEvent;
 import com.jcaa.usersmanagement.domain.enums.UserStatus;
 import com.jcaa.usersmanagement.domain.exception.UserAlreadyExistsException;
 import com.jcaa.usersmanagement.domain.model.UserModel;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,6 +41,7 @@ class CreateUserServiceTest {
   @Mock private SaveUserPort saveUserPort;
   @Mock private GetUserByEmailPort getUserByEmailPort;
   @Mock private EmailNotificationService emailNotificationService;
+  @Mock private UserEventPublisherPort userEventPublisherPort;
 
   private CreateUserService service;
 
@@ -49,7 +53,8 @@ class CreateUserServiceTest {
               saveUserPort,
               getUserByEmailPort,
               emailNotificationService,
-              validatorFactory.getValidator());
+              validatorFactory.getValidator(),
+              userEventPublisherPort);
     }
   }
 
@@ -85,6 +90,11 @@ class CreateUserServiceTest {
 
     verify(saveUserPort).save(any(UserModel.class));
     verify(emailNotificationService).notifyUserCreated(savedUser, "Pass1234");
+    verify(userEventPublisherPort).publishUserCreated(any(UserCreatedDomainEvent.class));
+
+    final InOrder inOrder = inOrder(saveUserPort, userEventPublisherPort);
+    inOrder.verify(saveUserPort).save(any(UserModel.class));
+    inOrder.verify(userEventPublisherPort).publishUserCreated(any(UserCreatedDomainEvent.class));
   }
 
   // ── email duplicado
@@ -110,7 +120,7 @@ class CreateUserServiceTest {
     // Act & Assert
     assertThrows(UserAlreadyExistsException.class, () -> service.execute(command));
     verify(saveUserPort, never()).save(any());
-    verify(emailNotificationService, never()).notifyUserCreated(any(), any());
+    verify(userEventPublisherPort, never()).publishUserCreated(any(UserCreatedDomainEvent.class));
   }
 
   // ── validación del command
@@ -125,6 +135,7 @@ class CreateUserServiceTest {
 
     // Act & Assert
     assertThrows(ConstraintViolationException.class, () -> service.execute(command));
-    verifyNoInteractions(saveUserPort, getUserByEmailPort, emailNotificationService);
+    verifyNoInteractions(
+        saveUserPort, getUserByEmailPort, emailNotificationService, userEventPublisherPort);
   }
 }

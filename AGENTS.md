@@ -265,6 +265,9 @@ Lineamientos acordados para cuando se implemente (enfoque *local-first*, sin cos
 - **Consistencia distribuida:** aplicar **Transactional Outbox** para no perder el evento si
   falla la publicación tras el guardado.
 - **Configuración:** `KAFKA_BOOTSTRAP_SERVERS`, tópico(s) y *group id* por variables de entorno.
+- **TODO (iteración futura):** `KafkaSslConfig` — validación adicional de formato PEM en arranque;
+  por ahora el fail-fast lo cubren los `@NotBlank` de `KafkaProperties` y el placeholder con
+  default vacío (`${KAFKA_SSL_CA_PEM:}`).
 
 ### Otros pendientes sugeridos
 
