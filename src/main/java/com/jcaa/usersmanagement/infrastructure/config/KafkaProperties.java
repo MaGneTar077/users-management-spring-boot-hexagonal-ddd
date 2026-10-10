@@ -8,8 +8,7 @@ import org.springframework.validation.annotation.Validated;
  * Propiedades de configuración de la conexión a Kafka (broker, seguridad y tópicos).
  *
  * <p>Lombok no soporta {@code @ToString} sobre {@code record}, por lo que el {@code toString} se
- * define de forma explícita omitiendo {@code password} y {@code sslCaPem} para no filtrar
- * credenciales en logs.
+ * define de forma explícita omitiendo {@code password} para no filtrar credenciales en logs.
  */
 @Validated
 @ConfigurationProperties(prefix = "kafka")
@@ -19,7 +18,7 @@ public record KafkaProperties(
     @NotBlank String saslMechanism,
     @NotBlank String username,
     @NotBlank String password,
-    @NotBlank String sslCaPem,
+    String sslCaLocation,
     @NotBlank String groupId,
     Topics topics) {
 
@@ -55,8 +54,8 @@ public record KafkaProperties(
         + username
         + ", password="
         + REDACTED
-        + ", sslCaPem="
-        + REDACTED
+        + ", sslCaLocation="
+        + sslCaLocation
         + ", groupId="
         + groupId
         + ", topics="
