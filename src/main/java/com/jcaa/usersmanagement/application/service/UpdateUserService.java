@@ -4,8 +4,10 @@ import com.jcaa.usersmanagement.application.port.in.UpdateUserUseCase;
 import com.jcaa.usersmanagement.application.port.out.GetUserByEmailPort;
 import com.jcaa.usersmanagement.application.port.out.GetUserByIdPort;
 import com.jcaa.usersmanagement.application.port.out.UpdateUserPort;
+import com.jcaa.usersmanagement.application.port.out.UserEventPublisherPort;
 import com.jcaa.usersmanagement.application.service.dto.command.UpdateUserCommand;
 import com.jcaa.usersmanagement.application.service.mapper.UserApplicationMapper;
+import com.jcaa.usersmanagement.domain.event.UserUpdatedDomainEvent;
 import com.jcaa.usersmanagement.domain.exception.UserAlreadyExistsException;
 import com.jcaa.usersmanagement.domain.exception.UserNotFoundException;
 import com.jcaa.usersmanagement.domain.model.UserModel;
@@ -15,10 +17,12 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UpdateUserService implements UpdateUserUseCase {
@@ -28,6 +32,7 @@ public class UpdateUserService implements UpdateUserUseCase {
   private final GetUserByEmailPort getUserByEmailPort;
   private final EmailNotificationService emailNotificationService;
   private final Validator validator;
+  private final UserEventPublisherPort userEventPublisherPort;
 
   @Override
   public UserModel execute(final UpdateUserCommand command) {
@@ -45,7 +50,22 @@ public class UpdateUserService implements UpdateUserUseCase {
 
     emailNotificationService.notifyUserUpdated(updatedUser);
 
+    publishUserUpdatedSafely(updatedUser);
+
     return updatedUser;
+  }
+
+  private void publishUserUpdatedSafely(final UserModel user) {
+    try {
+      userEventPublisherPort.publishUserUpdated(new UserUpdatedDomainEvent(user));
+    } catch (RuntimeException ex) {
+      log.warn(
+          "No se pudo publicar el evento de actualizacion de usuario. userId={}",
+          user.getId().value(),
+          ex);
+      // TODO Transactional Outbox: si el publish falla tras el update, hoy se pierde
+      // el evento. Migrar a Outbox en iteración posterior.
+    }
   }
 
   private void validateCommand(final UpdateUserCommand command) {

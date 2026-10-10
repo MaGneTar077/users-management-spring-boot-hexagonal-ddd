@@ -6,6 +6,7 @@ import com.jcaa.usersmanagement.application.port.in.GetAllUsersUseCase;
 import com.jcaa.usersmanagement.application.port.in.GetUserByIdUseCase;
 import com.jcaa.usersmanagement.application.port.in.LoginUseCase;
 import com.jcaa.usersmanagement.application.port.in.UpdateUserUseCase;
+import com.jcaa.usersmanagement.application.port.out.UserEventPublisherPort;
 import com.jcaa.usersmanagement.application.service.CreateUserService;
 import com.jcaa.usersmanagement.application.service.DeleteUserService;
 import com.jcaa.usersmanagement.application.service.EmailNotificationService;
@@ -13,6 +14,9 @@ import com.jcaa.usersmanagement.application.service.GetAllUsersService;
 import com.jcaa.usersmanagement.application.service.GetUserByIdService;
 import com.jcaa.usersmanagement.application.service.LoginService;
 import com.jcaa.usersmanagement.application.service.UpdateUserService;
+import com.jcaa.usersmanagement.domain.event.UserCreatedDomainEvent;
+import com.jcaa.usersmanagement.domain.event.UserDeletedDomainEvent;
+import com.jcaa.usersmanagement.domain.event.UserUpdatedDomainEvent;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.JavaMailEmailSenderAdapter;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.SmtpConfig;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConfig;
@@ -53,12 +57,22 @@ public final class DependencyContainer {
     // Construir Validator para las validaciones en la capa de aplicación
     final Validator validator = ValidatorProvider.buildValidator();
 
+    // La CLI está inactiva y no publica eventos: se usa un no-op del puerto.
+    final UserEventPublisherPort userEventPublisher = new NoOpUserEventPublisher();
+
     final CreateUserUseCase createUserUseCase =
-        new CreateUserService(userRepository, userRepository, emailNotification, validator);
+        new CreateUserService(
+            userRepository, userRepository, emailNotification, validator, userEventPublisher);
     final UpdateUserUseCase updateUserUseCase =
-        new UpdateUserService(userRepository, userRepository, userRepository, emailNotification, validator);
+        new UpdateUserService(
+            userRepository,
+            userRepository,
+            userRepository,
+            emailNotification,
+            validator,
+            userEventPublisher);
     final DeleteUserUseCase deleteUserUseCase =
-        new DeleteUserService(userRepository, userRepository, validator);
+        new DeleteUserService(userRepository, userRepository, validator, userEventPublisher);
     final GetUserByIdUseCase getUserByIdUseCase = new GetUserByIdService(userRepository, validator);
     final GetAllUsersUseCase getAllUsersUseCase = new GetAllUsersService(userRepository);
     final LoginUseCase loginUseCase = new LoginService(userRepository, validator);
@@ -101,5 +115,24 @@ public final class DependencyContainer {
         properties.get(SMTP_PASSWORD),
         properties.get(SMTP_FROM),
         properties.get(SMTP_FROM_NAME));
+  }
+
+  /** Implementación no-op del puerto para la CLI inactiva: no publica eventos. */
+  private static final class NoOpUserEventPublisher implements UserEventPublisherPort {
+
+    @Override
+    public void publishUserCreated(final UserCreatedDomainEvent event) {
+      // Sin publicación: la CLI está inactiva.
+    }
+
+    @Override
+    public void publishUserUpdated(final UserUpdatedDomainEvent event) {
+      // Sin publicación: la CLI está inactiva.
+    }
+
+    @Override
+    public void publishUserDeleted(final UserDeletedDomainEvent event) {
+      // Sin publicación: la CLI está inactiva.
+    }
   }
 }

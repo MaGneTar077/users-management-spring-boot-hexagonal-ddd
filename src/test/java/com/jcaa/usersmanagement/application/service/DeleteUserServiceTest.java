@@ -6,9 +6,11 @@ import static org.mockito.Mockito.*;
 
 import com.jcaa.usersmanagement.application.port.out.DeleteUserPort;
 import com.jcaa.usersmanagement.application.port.out.GetUserByIdPort;
+import com.jcaa.usersmanagement.application.port.out.UserEventPublisherPort;
 import com.jcaa.usersmanagement.application.service.dto.command.DeleteUserCommand;
 import com.jcaa.usersmanagement.domain.enums.UserRole;
 import com.jcaa.usersmanagement.domain.enums.UserStatus;
+import com.jcaa.usersmanagement.domain.event.UserDeletedDomainEvent;
 import com.jcaa.usersmanagement.domain.exception.UserNotFoundException;
 import com.jcaa.usersmanagement.domain.model.UserModel;
 import com.jcaa.usersmanagement.domain.valueobject.UserEmail;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -37,6 +40,7 @@ class DeleteUserServiceTest {
 
   @Mock private DeleteUserPort deleteUserPort;
   @Mock private GetUserByIdPort getUserByIdPort;
+  @Mock private UserEventPublisherPort userEventPublisherPort;
 
   private DeleteUserService service;
 
@@ -44,7 +48,11 @@ class DeleteUserServiceTest {
   void setUp() {
     try (final ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory()) {
       service =
-          new DeleteUserService(deleteUserPort, getUserByIdPort, validatorFactory.getValidator());
+          new DeleteUserService(
+              deleteUserPort,
+              getUserByIdPort,
+              validatorFactory.getValidator(),
+              userEventPublisherPort);
     }
   }
 
@@ -71,7 +79,12 @@ class DeleteUserServiceTest {
     service.execute(command);
 
     // Assert
-    verify(deleteUserPort).delete(new UserId("u-001"));
+    verify(deleteUserPort).delete(any(UserId.class));
+    verify(userEventPublisherPort).publishUserDeleted(any(UserDeletedDomainEvent.class));
+
+    final InOrder inOrder = inOrder(deleteUserPort, userEventPublisherPort);
+    inOrder.verify(deleteUserPort).delete(any(UserId.class));
+    inOrder.verify(userEventPublisherPort).publishUserDeleted(any(UserDeletedDomainEvent.class));
   }
 
   // ── usuario no encontrado
@@ -87,6 +100,7 @@ class DeleteUserServiceTest {
     // Act & Assert
     assertThrows(UserNotFoundException.class, () -> service.execute(command));
     verify(deleteUserPort, never()).delete(any());
+    verify(userEventPublisherPort, never()).publishUserDeleted(any(UserDeletedDomainEvent.class));
   }
 
   // ── validación del command
@@ -99,6 +113,6 @@ class DeleteUserServiceTest {
 
     // Act & Assert
     assertThrows(ConstraintViolationException.class, () -> service.execute(command));
-    verifyNoInteractions(deleteUserPort, getUserByIdPort);
+    verifyNoInteractions(deleteUserPort, getUserByIdPort, userEventPublisherPort);
   }
 }

@@ -43,6 +43,13 @@ build/
 ### Variables de entorno (nunca versionar secretos) ###
 .env
 .env.*
+ca.pem
+*.pem
 
 ### Material de trabajo local ###
 /spec/
+
+ca.pem
+*.pem
+*.p12
+*.jks
