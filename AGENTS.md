@@ -259,10 +259,15 @@ salida; el microservicio de notificaciones los consume.
   persistir y sin revertir la operación si falla el broker.
 - **Payload del envelope:** incluye `id, name, email, role, status`; el `password` **nunca** se
   incluye. El envelope es `eventId, eventType, occurredAt, aggregateId, payload`; la clave del
-  mensaje es el `userId`. El evento de eliminación solo lleva `id`.
+  mensaje es el `userId`.
   - **Nota:** el `email` se publica en el evento porque el microservicio de notificaciones lo
     necesita para enviar correos. Es una **excepción consciente** a la regla de sanitización; el
     `password` permanece excluido por seguridad.
+- **Evento de eliminación (`USER_DELETED`):** el payload solo lleva `id`. El
+  `UserDeletedDomainEvent` únicamente expone el `userId` (no el email), por lo que el email no puede
+  incluirse sin cambiar el contrato de dominio. Si el microservicio de notificaciones necesita
+  enviar un correo de eliminación, deberá resolver el email por otra vía (p. ej., una copia local
+  del usuario antes de borrar).
 - **Conexión:** `SASL_SSL` con mecanismo **PLAIN** (`PlainLoginModule`).
 - **Certificado CA:** se lee desde un **archivo** (no desde una variable de entorno con el PEM),
   porque Render no preserva los saltos de línea en los secrets de texto y Kafka falla con
