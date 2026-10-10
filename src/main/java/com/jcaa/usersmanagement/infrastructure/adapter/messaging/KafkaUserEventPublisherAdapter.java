@@ -17,10 +17,13 @@ import org.springframework.stereotype.Component;
 /**
  * Adapter de salida que publica eventos de dominio de usuarios en el broker de Kafka.
  *
- * <p>Sanitiza el payload antes de publicar: expone únicamente {@code id, name, role, status} y
- * excluye explícitamente {@code email} y {@code password} (PII). Actualmente no relanza errores de
- * publicación hacia el caller; está previsto migrar a un patrón Transactional Outbox para no perder
- * eventos si falla la publicación tras el guardado.
+ * <p>El payload del envelope incluye {@code id, name, email, role, status}. El {@code email} SÍ se
+ * publica porque el microservicio de notificaciones lo necesita para enviar los correos: es una
+ * excepción consciente a la regla de sanitización. El {@code password} se excluye siempre por
+ * seguridad. El evento de eliminación solo publica el {@code id} (no requiere email).
+ *
+ * <p>La publicación no revierte la transacción de negocio si falla el broker; queda pendiente
+ * migrar a Transactional Outbox para no perder eventos.
  */
 @Slf4j
 @Component
@@ -32,6 +35,7 @@ public class KafkaUserEventPublisherAdapter implements UserEventPublisherPort {
 
   private static final String FIELD_ID = "id";
   private static final String FIELD_NAME = "name";
+  private static final String FIELD_EMAIL = "email";
   private static final String FIELD_ROLE = "role";
   private static final String FIELD_STATUS = "status";
 
@@ -94,6 +98,7 @@ public class KafkaUserEventPublisherAdapter implements UserEventPublisherPort {
     final Map<String, String> payload = new LinkedHashMap<>();
     payload.put(FIELD_ID, user.getId().value());
     payload.put(FIELD_NAME, user.getName().value());
+    payload.put(FIELD_EMAIL, user.getEmail().value());
     payload.put(FIELD_ROLE, user.getRole().name());
     payload.put(FIELD_STATUS, user.getStatus().name());
     return payload;

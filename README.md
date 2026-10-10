@@ -13,6 +13,31 @@ Spring es el único *composition root*: `Main` inicia el contexto y las dependen
 
 En Windows se puede utilizar `mvnw.cmd`.
 
+## Eventos Kafka (envelope publicado)
+
+Al crear, actualizar o eliminar un usuario se publica un evento de dominio en Apache Kafka (Aiven).
+La clave del mensaje es el `userId`. El contrato del envelope es:
+
+```json
+{
+  "eventId": "id unico del evento (idempotencia)",
+  "eventType": "USER_CREATED | USER_UPDATED | USER_DELETED",
+  "occurredAt": "2026-01-01T12:00:00",
+  "aggregateId": "id del usuario",
+  "payload": {
+    "id": "id del usuario",
+    "name": "nombre",
+    "email": "correo@ejemplo.com",
+    "role": "ADMIN",
+    "status": "ACTIVE"
+  }
+}
+```
+
+El evento de eliminación (`USER_DELETED`) solo incluye `id` en el `payload`. El `email` se publica
+porque el microservicio de notificaciones lo necesita para enviar los correos (**excepción
+consciente** a la regla de sanitización); el `password` **nunca** se publica.
+
 ## Despliegue en Render
 
 El archivo `render.yaml` define el servicio web, el build con Docker y el despliegue
