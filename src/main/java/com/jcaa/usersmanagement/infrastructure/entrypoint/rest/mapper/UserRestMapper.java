@@ -4,6 +4,7 @@ import com.jcaa.usersmanagement.application.service.dto.command.CreateUserComman
 import com.jcaa.usersmanagement.application.service.dto.command.DeleteUserCommand;
 import com.jcaa.usersmanagement.application.service.dto.command.UpdateUserCommand;
 import com.jcaa.usersmanagement.application.service.dto.query.GetUserByIdQuery;
+import com.jcaa.usersmanagement.application.service.dto.view.UserView;
 import com.jcaa.usersmanagement.domain.model.UserModel;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.rest.dto.request.CreateUserRestRequest;
 import com.jcaa.usersmanagement.infrastructure.entrypoint.rest.dto.request.UpdateUserRestRequest;
@@ -38,8 +39,18 @@ public class UserRestMapper {
     return new GetUserByIdQuery(id);
   }
 
-  public DeleteUserCommand toDeleteCommand(final String id) {
-    return new DeleteUserCommand(id);
+  /**
+   * El header {@code Authorization} viaja en el command porque, tras borrar al usuario, hay que
+   * pedirle al file-service que borre sus archivos reenviando el mismo token.
+   */
+  public DeleteUserCommand toDeleteCommand(final String id, final String authorizationHeader) {
+    return new DeleteUserCommand(id, authorizationHeader);
+  }
+
+  /** La lectura por id devuelve ya una proyeccion sin contraseña (puede venir de la cache). */
+  public UserRestResponse toResponse(final UserView user) {
+    return new UserRestResponse(
+        user.id(), user.name(), user.email(), user.role(), user.status());
   }
 
   public UserRestResponse toResponse(final UserModel user) {

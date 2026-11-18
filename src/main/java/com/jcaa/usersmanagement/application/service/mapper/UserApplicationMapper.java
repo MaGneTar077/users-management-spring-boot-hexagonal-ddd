@@ -4,6 +4,7 @@ import com.jcaa.usersmanagement.application.service.dto.command.CreateUserComman
 import com.jcaa.usersmanagement.application.service.dto.command.DeleteUserCommand;
 import com.jcaa.usersmanagement.application.service.dto.command.UpdateUserCommand;
 import com.jcaa.usersmanagement.application.service.dto.query.GetUserByIdQuery;
+import com.jcaa.usersmanagement.application.service.dto.view.UserView;
 import com.jcaa.usersmanagement.domain.enums.UserRole;
 import com.jcaa.usersmanagement.domain.enums.UserStatus;
 import com.jcaa.usersmanagement.domain.model.UserModel;
@@ -46,6 +47,16 @@ public class UserApplicationMapper {
 
   public UserId fromDeleteCommandToUserId(final DeleteUserCommand command) {
     return new UserId(command.id());
+  }
+
+  /** Proyeccion de lectura sin contraseña: es lo unico que se expone y lo unico que se cachea. */
+  public UserView fromModelToView(final UserModel user) {
+    return new UserView(
+        user.getId().value(),
+        user.getName().value(),
+        user.getEmail().value(),
+        user.getRole().name(),
+        user.getStatus().name());
   }
 
   private UserPassword resolvePassword(

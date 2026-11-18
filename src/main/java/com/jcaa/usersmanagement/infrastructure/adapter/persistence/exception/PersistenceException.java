@@ -9,6 +9,11 @@ public final class PersistenceException extends RuntimeException {
   private static final String MESSAGE_ALL = "Failed to retrieve all users.";
   private static final String MESSAGE_DELETE = "Failed to delete user with ID: '%s'.";
   private static final String MESSAGE_CONNECTION = "Could not establish database connection.";
+  private static final String MESSAGE_FILE_SAVE = "Failed to save user file with ID: '%s'.";
+  private static final String MESSAGE_FILE_FIND = "Failed to find user file with ID: '%s'.";
+  private static final String MESSAGE_FILE_FIND_BY_USER =
+      "Failed to find the files of user with ID: '%s'.";
+  private static final String MESSAGE_FILE_DELETE = "Failed to delete user file with ID: '%s'.";
 
   private PersistenceException(final String message, final Throwable cause) {
     super(message, cause);
@@ -44,5 +49,25 @@ public final class PersistenceException extends RuntimeException {
 
   public static PersistenceException becauseConnectionFailed(final Throwable cause) {
     return new PersistenceException(MESSAGE_CONNECTION, cause);
+  }
+
+  public static PersistenceException becauseFileSaveFailed(
+      final String fileId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_FILE_SAVE, fileId), cause);
+  }
+
+  public static PersistenceException becauseFileFindByIdFailed(
+      final String fileId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_FILE_FIND, fileId), cause);
+  }
+
+  public static PersistenceException becauseFileFindByUserIdFailed(
+      final String userId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_FILE_FIND_BY_USER, userId), cause);
+  }
+
+  public static PersistenceException becauseFileDeleteFailed(
+      final String fileId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_FILE_DELETE, fileId), cause);
   }
 }

@@ -36,6 +36,24 @@ CREATE TRIGGER trg_users_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION set_updated_at();
 
+-- =============================================
+-- Archivos de usuario
+--
+-- Se guarda la KEY del objeto en Backblaze, nunca la URL firmada:
+-- las URLs firmadas caducan y no sirven como dato persistente.
+-- El borrado del usuario arrastra sus filas por ON DELETE CASCADE.
+-- =============================================
+CREATE TABLE IF NOT EXISTS user_files (
+    id            VARCHAR(36)  NOT NULL PRIMARY KEY,
+    user_id       VARCHAR(36)  NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    file_key      VARCHAR(500) NOT NULL,
+    content_type  VARCHAR(100) NOT NULL,
+    size_bytes    BIGINT       NOT NULL,
+    created_at    TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_files_user_id ON user_files (user_id);
+
 -- Usuario administrador inicial (password: Admin1234!)
 INSERT INTO users (id, name, email, password, role, status)
 VALUES (

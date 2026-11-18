@@ -4,6 +4,7 @@ import com.jcaa.usersmanagement.application.port.in.UpdateUserUseCase;
 import com.jcaa.usersmanagement.application.port.out.GetUserByEmailPort;
 import com.jcaa.usersmanagement.application.port.out.GetUserByIdPort;
 import com.jcaa.usersmanagement.application.port.out.UpdateUserPort;
+import com.jcaa.usersmanagement.application.port.out.UserCachePort;
 import com.jcaa.usersmanagement.application.port.out.UserEventPublisherPort;
 import com.jcaa.usersmanagement.application.service.dto.command.UpdateUserCommand;
 import com.jcaa.usersmanagement.application.service.mapper.UserApplicationMapper;
@@ -33,6 +34,7 @@ public class UpdateUserService implements UpdateUserUseCase {
   private final EmailNotificationService emailNotificationService;
   private final Validator validator;
   private final UserEventPublisherPort userEventPublisherPort;
+  private final UserCachePort userCachePort;
 
   @Override
   public UserModel execute(final UpdateUserCommand command) {
@@ -47,6 +49,10 @@ public class UpdateUserService implements UpdateUserUseCase {
     final UserModel userToUpdate =
         UserApplicationMapper.fromUpdateCommandToModel(command, current.getPassword());
     final UserModel updatedUser = updateUserPort.update(userToUpdate);
+
+    // Despues de persistir: si se invalidara antes, una lectura concurrente podria
+    // volver a cachear el valor viejo.
+    userCachePort.evict(userId.value());
 
     emailNotificationService.notifyUserUpdated(updatedUser);
 

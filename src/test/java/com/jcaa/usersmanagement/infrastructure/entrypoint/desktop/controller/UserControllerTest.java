@@ -21,6 +21,7 @@ import com.jcaa.usersmanagement.application.service.dto.command.DeleteUserComman
 import com.jcaa.usersmanagement.application.service.dto.command.LoginCommand;
 import com.jcaa.usersmanagement.application.service.dto.command.UpdateUserCommand;
 import com.jcaa.usersmanagement.application.service.dto.query.GetUserByIdQuery;
+import com.jcaa.usersmanagement.application.service.dto.view.UserView;
 import com.jcaa.usersmanagement.domain.enums.UserRole;
 import com.jcaa.usersmanagement.domain.enums.UserStatus;
 import com.jcaa.usersmanagement.domain.exception.InvalidCredentialsException;
@@ -143,8 +144,8 @@ class UserControllerTest {
       "findUserById() builds a GetUserByIdQuery with the given id and returns the mapped response")
   void findUserById_returnsMappedResponse_whenUserExists() {
     // Arrange
-    final UserModel user =
-        buildUser("u-002", "Bob Jones", "bob@example.com", UserRole.MEMBER, UserStatus.ACTIVE);
+    final UserView user =
+        new UserView("u-002", "Bob Jones", "bob@example.com", "MEMBER", "ACTIVE");
     when(getUserByIdUseCase.execute(new GetUserByIdQuery("u-002"))).thenReturn(user);
 
     // Act

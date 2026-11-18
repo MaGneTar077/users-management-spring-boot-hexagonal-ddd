@@ -18,6 +18,7 @@ import com.jcaa.usersmanagement.application.service.dto.command.CreateUserComman
 import com.jcaa.usersmanagement.application.service.dto.command.DeleteUserCommand;
 import com.jcaa.usersmanagement.application.service.dto.command.UpdateUserCommand;
 import com.jcaa.usersmanagement.application.service.dto.query.GetUserByIdQuery;
+import com.jcaa.usersmanagement.application.service.dto.view.UserView;
 import com.jcaa.usersmanagement.domain.enums.UserRole;
 import com.jcaa.usersmanagement.domain.enums.UserStatus;
 import com.jcaa.usersmanagement.domain.model.UserModel;
@@ -172,14 +173,8 @@ class UserRestControllerTest {
   @DisplayName("GET /api/users/{id} debe responder usando el caso de uso inyectado por Spring")
   void shouldGetUserByIdThroughSpringMvc() throws Exception {
     // Arrange
-    final UserModel user =
-        new UserModel(
-            new UserId(ID),
-            new UserName("Ada Lovelace"),
-            new UserEmail("ada@example.com"),
-            UserPassword.fromHash("$2a$12$abcdefghijklmnopqrstuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"),
-            UserRole.ADMIN,
-            UserStatus.ACTIVE);
+    final UserView user =
+        new UserView(ID, "Ada Lovelace", "ada@example.com", "ADMIN", "ACTIVE");
     when(getUserByIdUseCase.execute(new GetUserByIdQuery(ID))).thenReturn(user);
 
     // Act & Assert

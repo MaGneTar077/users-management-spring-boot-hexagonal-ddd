@@ -5,7 +5,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.jcaa.usersmanagement.application.port.out.DeleteUserPort;
+import com.jcaa.usersmanagement.application.port.out.FileServicePort;
 import com.jcaa.usersmanagement.application.port.out.GetUserByIdPort;
+import com.jcaa.usersmanagement.application.port.out.UserCachePort;
 import com.jcaa.usersmanagement.application.port.out.UserEventPublisherPort;
 import com.jcaa.usersmanagement.application.service.dto.command.DeleteUserCommand;
 import com.jcaa.usersmanagement.domain.enums.UserRole;
@@ -41,6 +43,8 @@ class DeleteUserServiceTest {
   @Mock private DeleteUserPort deleteUserPort;
   @Mock private GetUserByIdPort getUserByIdPort;
   @Mock private UserEventPublisherPort userEventPublisherPort;
+  @Mock private FileServicePort fileServicePort;
+  @Mock private UserCachePort userCachePort;
 
   private DeleteUserService service;
 
@@ -52,7 +56,9 @@ class DeleteUserServiceTest {
               deleteUserPort,
               getUserByIdPort,
               validatorFactory.getValidator(),
-              userEventPublisherPort);
+              userEventPublisherPort,
+              fileServicePort,
+              userCachePort);
     }
   }
 
@@ -87,6 +93,57 @@ class DeleteUserServiceTest {
     inOrder.verify(userEventPublisherPort).publishUserDeleted(any(UserDeletedDomainEvent.class));
   }
 
+  // ── limpieza de archivos en el file-service
+
+  @Test
+  @DisplayName("execute() pide al file-service borrar los archivos despues de borrar el usuario")
+  void shouldDeleteRemoteFilesAfterDeletingUser() {
+    // Arrange
+    final DeleteUserCommand command = new DeleteUserCommand("u-001", "Bearer token-123");
+    when(getUserByIdPort.getById(any())).thenReturn(Optional.of(existingUser()));
+
+    // Act
+    service.execute(command);
+
+    // Assert
+    final InOrder inOrder = inOrder(deleteUserPort, fileServicePort);
+    inOrder.verify(deleteUserPort).delete(any(UserId.class));
+    inOrder.verify(fileServicePort).deleteAllOfUser("u-001", "Bearer token-123");
+  }
+
+  @Test
+  @DisplayName("execute() no revierte el borrado cuando el file-service falla")
+  void shouldNotRollbackWhenFileServiceFails() {
+    // Arrange
+    final DeleteUserCommand command = new DeleteUserCommand("u-001", "Bearer token-123");
+    when(getUserByIdPort.getById(any())).thenReturn(Optional.of(existingUser()));
+    doThrow(new IllegalStateException("file-service caido"))
+        .when(fileServicePort)
+        .deleteAllOfUser(any(), any());
+
+    // Act
+    service.execute(command);
+
+    // Assert
+    verify(deleteUserPort).delete(any(UserId.class));
+    verify(userEventPublisherPort).publishUserDeleted(any(UserDeletedDomainEvent.class));
+  }
+
+  @Test
+  @DisplayName("execute() no llama al file-service cuando no hay header Authorization")
+  void shouldSkipRemoteCleanupWithoutAuthorizationHeader() {
+    // Arrange
+    final DeleteUserCommand command = new DeleteUserCommand("u-001");
+    when(getUserByIdPort.getById(any())).thenReturn(Optional.of(existingUser()));
+
+    // Act
+    service.execute(command);
+
+    // Assert
+    verify(deleteUserPort).delete(any(UserId.class));
+    verifyNoInteractions(fileServicePort);
+  }
+
   // ── usuario no encontrado
 
   @Test
@@ -113,6 +170,33 @@ class DeleteUserServiceTest {
 
     // Act & Assert
     assertThrows(ConstraintViolationException.class, () -> service.execute(command));
-    verifyNoInteractions(deleteUserPort, getUserByIdPort, userEventPublisherPort);
+    verifyNoInteractions(
+        deleteUserPort, getUserByIdPort, userEventPublisherPort, fileServicePort, userCachePort);
+  }
+
+  @Test
+  @DisplayName("execute() invalida la cache del usuario tras borrarlo")
+  void shouldEvictCacheAfterDeletingUser() {
+    // Arrange
+    final DeleteUserCommand command = new DeleteUserCommand("u-001");
+    when(getUserByIdPort.getById(any())).thenReturn(Optional.of(existingUser()));
+
+    // Act
+    service.execute(command);
+
+    // Assert
+    final InOrder inOrder = inOrder(deleteUserPort, userCachePort);
+    inOrder.verify(deleteUserPort).delete(any(UserId.class));
+    inOrder.verify(userCachePort).evict("u-001");
+  }
+
+  private static UserModel existingUser() {
+    return new UserModel(
+        new UserId("u-001"),
+        new UserName("John Arrieta"),
+        new UserEmail("john@example.com"),
+        UserPassword.fromHash("$2a$12$abcdefghijklmnopqrstuO"),
+        UserRole.ADMIN,
+        UserStatus.ACTIVE);
   }
 }

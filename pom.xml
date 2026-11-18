@@ -58,6 +58,18 @@
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
 
+    <!-- Cache + Redis: Valkey habla el protocolo de Redis, por lo que se usa el
+         cliente de Redis (Lettuce) sin cambios. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-cache</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+
     <!-- ======================================================== -->
     <!-- Dependencias no gestionadas por el BOM de Spring Boot     -->
     <!-- ======================================================== -->

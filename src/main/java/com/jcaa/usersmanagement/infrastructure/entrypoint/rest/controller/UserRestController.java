@@ -16,6 +16,7 @@ import com.jcaa.usersmanagement.infrastructure.entrypoint.rest.dto.response.User
 import com.jcaa.usersmanagement.infrastructure.entrypoint.rest.mapper.UserRestMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -56,8 +58,7 @@ public class UserRestController implements UserRestControllerDocs {
   @GetMapping("/{id}")
   public UserRestResponse getById(@PathVariable final String id) {
     final GetUserByIdQuery query = UserRestMapper.toGetByIdQuery(id);
-    final UserModel user = getUserByIdUseCase.execute(query);
-    return UserRestMapper.toResponse(user);
+    return UserRestMapper.toResponse(getUserByIdUseCase.execute(query));
   }
 
   @PutMapping("/{id}")
@@ -71,8 +72,11 @@ public class UserRestController implements UserRestControllerDocs {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void delete(@PathVariable final String id) {
-    final DeleteUserCommand command = UserRestMapper.toDeleteCommand(id);
+  public void delete(
+      @PathVariable final String id,
+      @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false)
+          final String authorizationHeader) {
+    final DeleteUserCommand command = UserRestMapper.toDeleteCommand(id, authorizationHeader);
     deleteUserUseCase.execute(command);
   }
 }

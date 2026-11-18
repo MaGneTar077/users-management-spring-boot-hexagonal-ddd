@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.jcaa.usersmanagement.application.port.out.GetUserByEmailPort;
 import com.jcaa.usersmanagement.application.port.out.GetUserByIdPort;
 import com.jcaa.usersmanagement.application.port.out.UpdateUserPort;
+import com.jcaa.usersmanagement.application.port.out.UserCachePort;
 import com.jcaa.usersmanagement.application.port.out.UserEventPublisherPort;
 import com.jcaa.usersmanagement.application.service.dto.command.UpdateUserCommand;
 import com.jcaa.usersmanagement.domain.enums.UserRole;
@@ -46,6 +47,7 @@ class UpdateUserServiceTest {
   @Mock private GetUserByEmailPort getUserByEmailPort;
   @Mock private EmailNotificationService emailNotificationService;
   @Mock private UserEventPublisherPort userEventPublisherPort;
+  @Mock private UserCachePort userCachePort;
 
   private UpdateUserService service;
 
@@ -65,7 +67,8 @@ class UpdateUserServiceTest {
               getUserByEmailPort,
               emailNotificationService,
               validatorFactory.getValidator(),
-              userEventPublisherPort);
+              userEventPublisherPort,
+              userCachePort);
     }
 
     existingUser =
@@ -103,6 +106,28 @@ class UpdateUserServiceTest {
     final InOrder inOrder = inOrder(updateUserPort, userEventPublisherPort);
     inOrder.verify(updateUserPort).update(any(UserModel.class));
     inOrder.verify(userEventPublisherPort).publishUserUpdated(any(UserUpdatedDomainEvent.class));
+  }
+
+  // ── invalidacion de cache
+
+  @Test
+  @DisplayName("execute() invalida la cache del usuario despues de actualizarlo")
+  void shouldEvictCacheAfterUpdating() {
+    // Arrange
+    final UpdateUserCommand command =
+        new UpdateUserCommand(ID, "John Updated", EMAIL, null, "ADMIN", "ACTIVE");
+
+    when(getUserByIdPort.getById(any())).thenReturn(Optional.of(existingUser));
+    when(getUserByEmailPort.getByEmail(any())).thenReturn(Optional.of(existingUser));
+    when(updateUserPort.update(any())).thenReturn(existingUser);
+
+    // Act
+    service.execute(command);
+
+    // Assert
+    final InOrder inOrder = inOrder(updateUserPort, userCachePort);
+    inOrder.verify(updateUserPort).update(any(UserModel.class));
+    inOrder.verify(userCachePort).evict(ID);
   }
 
   // ── usuario no encontrado

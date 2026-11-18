@@ -6,6 +6,7 @@ import com.jcaa.usersmanagement.application.port.in.GetAllUsersUseCase;
 import com.jcaa.usersmanagement.application.port.in.GetUserByIdUseCase;
 import com.jcaa.usersmanagement.application.port.in.LoginUseCase;
 import com.jcaa.usersmanagement.application.port.in.UpdateUserUseCase;
+import com.jcaa.usersmanagement.application.port.out.UserCachePort;
 import com.jcaa.usersmanagement.application.port.out.UserEventPublisherPort;
 import com.jcaa.usersmanagement.application.service.CreateUserService;
 import com.jcaa.usersmanagement.application.service.DeleteUserService;
@@ -17,6 +18,7 @@ import com.jcaa.usersmanagement.application.service.UpdateUserService;
 import com.jcaa.usersmanagement.domain.event.UserCreatedDomainEvent;
 import com.jcaa.usersmanagement.domain.event.UserDeletedDomainEvent;
 import com.jcaa.usersmanagement.domain.event.UserUpdatedDomainEvent;
+import com.jcaa.usersmanagement.infrastructure.adapter.cache.NoOpUserCacheAdapter;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.JavaMailEmailSenderAdapter;
 import com.jcaa.usersmanagement.infrastructure.adapter.email.SmtpConfig;
 import com.jcaa.usersmanagement.infrastructure.adapter.persistence.config.DatabaseConfig;
@@ -60,6 +62,9 @@ public final class DependencyContainer {
     // La CLI está inactiva y no publica eventos: se usa un no-op del puerto.
     final UserEventPublisherPort userEventPublisher = new NoOpUserEventPublisher();
 
+    // La CLI tampoco usa Valkey: lee siempre de PostgreSQL.
+    final UserCachePort userCache = new NoOpUserCacheAdapter();
+
     final CreateUserUseCase createUserUseCase =
         new CreateUserService(
             userRepository, userRepository, emailNotification, validator, userEventPublisher);
@@ -70,10 +75,18 @@ public final class DependencyContainer {
             userRepository,
             emailNotification,
             validator,
-            userEventPublisher);
+            userEventPublisher,
+            userCache);
     final DeleteUserUseCase deleteUserUseCase =
-        new DeleteUserService(userRepository, userRepository, validator, userEventPublisher);
-    final GetUserByIdUseCase getUserByIdUseCase = new GetUserByIdService(userRepository, validator);
+        new DeleteUserService(
+            userRepository,
+            userRepository,
+            validator,
+            userEventPublisher,
+            new NoOpFileService(),
+            userCache);
+    final GetUserByIdUseCase getUserByIdUseCase =
+        new GetUserByIdService(userRepository, validator, userCache);
     final GetAllUsersUseCase getAllUsersUseCase = new GetAllUsersService(userRepository);
     final LoginUseCase loginUseCase = new LoginService(userRepository, validator);
 

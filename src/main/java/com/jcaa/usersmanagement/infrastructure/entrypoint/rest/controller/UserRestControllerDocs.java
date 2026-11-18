@@ -215,6 +215,7 @@ public interface UserRestControllerDocs {
   void delete(
       @Parameter(description = "ID único del usuario a eliminar.", example = "usr-001", required = true)
           @PathVariable
-          String id);
+          String id,
+      @Parameter(hidden = true) String authorizationHeader);
 }
 
